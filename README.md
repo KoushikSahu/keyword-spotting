@@ -1,4 +1,4 @@
-# Keyword spotting
+# Keyword Spotting
 
 ## Resources
 
