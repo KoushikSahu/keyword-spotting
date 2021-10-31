@@ -1,0 +1,6 @@
+# model files
+model/
+
+# cache files
+.ipynb_checkpoints/
+
