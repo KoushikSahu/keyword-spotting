@@ -4,3 +4,6 @@ model/
 # cache files
 .ipynb_checkpoints/
 
+# data files
+data/
+
