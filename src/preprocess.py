@@ -1,5 +1,4 @@
 import librosa
-import librosa.display
 from pathlib import Path
 import numpy as np
 import torch
@@ -19,13 +18,20 @@ class Compose():
         return inp
 
 class Audio():
-    def __init__(self, path):
-        self.data, self.sr = librosa.core.load(path)
+    @staticmethod
+    def load_audio(pth):
+        data, sr = librosa.load(pth, sr=16000)
+        if data.size < 16000:
+            data = np.pad(data, (16000-data.size, 0), mode='constant')
+        return {
+                'data': np.array(data),
+                'sr': sr
+                }
 
     @staticmethod
     def lfbe_delta(inp):
-        mel_spec = librosa.feature.melspectrogram(inp.data,
-                16000,
+        mel_spec = librosa.feature.melspectrogram(inp['data'],
+                sr=16000,
                 n_mels=13,
                 hop_length=160,
                 n_fft=480,
@@ -41,28 +47,27 @@ class Audio():
 
     @staticmethod
     def to_tensor(inp):
-        if isinstance(inp, Audio):
-            return torch.tensor(inp.data)
         return torch.tensor(inp)
 
-def to_csv(clss, dset_pth):
+def to_csv(clss, dset_pth=Path('data/speech_commands_v0.02')):
     data_dict = dict()
     data_dict['filename'] = list()
+    data_dict['classname'] = list()
     data_dict['class'] = list()
 
     for cls in clss:
         pth = dset_pth/cls
         for file in os.listdir(pth):
             data_dict['filename'].append(file)
-            data_dict['class'].append(cls)
+            data_dict['classname'].append(cls)
+
+    le = LabelEncoder()
+    le.fit(data_dict['classname'])
+    data_dict['class'] = le.transform(data_dict['classname'])
 
     return pd.DataFrame(data_dict)
 
 def cross_validation(df):
-    le = LabelEncoder()
-    le.fit(df['class'])
-    df['class'] = le.transform(df['class'])
-
     train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['class'], shuffle=True)
     valid_df, test_df = train_test_split(valid_df,
             test_size=0.5,
@@ -73,14 +78,10 @@ def cross_validation(df):
     valid_df = valid_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
-    return le, train_df, valid_df, test_df
+    return train_df, valid_df, test_df
 
 if __name__ == '__main__':
-    audio_path = Path('../data/google_speech_command/go/004ae714_nohash_0.wav')
-    a = Audio(audio_path)
-    tfms = Compose([Audio.lfbe_delta, Audio.to_tensor])
-    print(tfms(a))
-
-    dset_pth = Path('../data/google_speech_command')
-    to_csv(['yes', 'no'], dset_pth)
+    audio_path = Path('./data/speech_commands_v0.02/go/0132a06d_nohash_4.wav')
+    tfms = Compose([Audio.load_audio, Audio.lfbe_delta, Audio.to_tensor])
+    print(tfms(audio_path).shape)
 
