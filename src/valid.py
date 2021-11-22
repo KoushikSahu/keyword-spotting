@@ -7,7 +7,7 @@ def valid(dl, model, loss_fn, optimizer):
   
   with torch.no_grad():
     for data in (itr := tqdm(dl)):
-      audio = data['audio'].to('cuda').view(-1, 39*101)
+      audio = data['audio'].to('cuda')
       targ = data['class'].to('cuda')
 
       output = model(audio)

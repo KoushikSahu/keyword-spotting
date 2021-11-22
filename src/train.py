@@ -3,7 +3,7 @@ import torch
 
 def train(dl, model, loss_fn, optimizer):
   for data in (itr := tqdm(dl)):
-    audio = data['audio'].to('cuda').view(-1, 39*101)
+    audio = data['audio'].to('cuda')
     targ = data['class'].to('cuda')
 
     optimizer.zero_grad()
