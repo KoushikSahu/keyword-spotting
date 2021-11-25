@@ -5,7 +5,7 @@ from dataloader import get_dl
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from model import DNNModel, TCNModel
+from model import DNNModel, TCNModel, EdgeCRNN
 from tqdm import tqdm
 from train import train
 from valid import valid
@@ -27,7 +27,7 @@ def run(cls, epochs=5):
   test_dl = get_dl(test_ds, bs=32)
 
   loss_fn = nn.CrossEntropyLoss()
-  model = TCNModel(n_classes=len(cls), n_filters=16).to('cuda')
+  model = EdgeCRNN(width_mult=1.).to('cuda')
   optimizer = optim.AdamW(model.parameters())
 
   for epoch in range(epochs):
