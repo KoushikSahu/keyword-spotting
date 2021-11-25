@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import torch
 
-def train(dl, model, loss_fn, optimizer):
+def train(dl, model, loss_fn, optimizer, scheduler):
   for data in (itr := tqdm(dl)):
     # for dnn and tcn:
     # audio = data['audio'].to('cuda').view(-1, 1, 39, 101)
@@ -15,3 +15,5 @@ def train(dl, model, loss_fn, optimizer):
     loss.backward()
     optimizer.step()
     itr.set_description(f'Training Loss: {loss}')
+
+    scheduler.step()
