@@ -10,7 +10,7 @@ def valid(dl, model, loss_fn, optimizer):
       # for dnn and tcn:
       # audio = data['audio'].to('cuda').view(-1, 1, 39, 101)
       # for edgecrnn:
-      audio = data['audio'].to('cuda').view(-1, 1, 39, 101)
+      audio = data['audio'].to('cuda')
       targ = data['class'].to('cuda')
 
       output = model(audio)

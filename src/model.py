@@ -185,6 +185,7 @@ class EdgeCRNN(nn.Module):
         # self.classifier = nn.Sequential(nn.Linear(self.stage_out_channels[-1], n_class))
 
     def forward(self, x):
+        x = x.view(-1, 1, 39, 101)
         # print(x.shape)
         x = self.conv1(x)
         x = self.maxpool(x)
