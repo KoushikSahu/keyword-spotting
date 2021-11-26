@@ -5,6 +5,7 @@ from preprocess import Audio
 from pathlib import Path
 from tsai.all import TCN
 
+
 class TCNModel(nn.Module):
   def __init__(self, n_classes, n_filters):
     super(TCNModel, self).__init__()
@@ -12,6 +13,7 @@ class TCNModel(nn.Module):
 
   def forward(self, inp):
     return self.tcn(inp)
+
 
 class DNNModel(nn.Module):
   def __init__(self, n_classes):
@@ -27,12 +29,14 @@ class DNNModel(nn.Module):
 
     return out
 
+
 def first_conv(inp, oup):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, 1, 1, bias=False),
         nn.BatchNorm2d(oup),
         nn.ReLU(inplace=True)
     )
+
 
 def conv_1x1_bn(inp, oup):
     return nn.Sequential(
@@ -42,6 +46,7 @@ def conv_1x1_bn(inp, oup):
         nn.ReLU(inplace=True)
     )
 
+
 def channel_shuffle(x, groups):
     batchsize, num_channels, height, width = x.data.size()
 
@@ -50,12 +55,14 @@ def channel_shuffle(x, groups):
     # reshape
     x = x.view(batchsize, groups, channels_per_group, height, width)
 
-    x = torch.transpose(x, 1, 2).contiguous()  # (batchsize, channels_per_group, groups, height, width)
+    # (batchsize, channels_per_group, groups, height, width)
+    x = torch.transpose(x, 1, 2).contiguous()
 
     # flatten
     x = x.view(batchsize, -1, height, width)  # (batchsize, -1, height, width)
 
     return x
+
 
 def Base_block(oup_inc, stride):
 
@@ -74,6 +81,7 @@ def Base_block(oup_inc, stride):
     )
     return banch
 
+
 def EdgeCRNN_block(inp, oup_inc, stride):
     left_banch = nn.Sequential(
         # dw
@@ -85,19 +93,21 @@ def EdgeCRNN_block(inp, oup_inc, stride):
         nn.ReLU(inplace=True),
     )
     right_banch = nn.Sequential(
-                # pw
-                nn.Conv2d(inp, oup_inc, 1, 1, 0, bias=False),
-                nn.BatchNorm2d(oup_inc),
-                nn.ReLU(inplace=True),
-                # dw
-                nn.Conv2d(oup_inc, oup_inc, 3, stride, 1, groups=oup_inc, bias=False),
-                nn.BatchNorm2d(oup_inc),
-                # pw-linear
-                nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
-                nn.BatchNorm2d(oup_inc),
-                nn.ReLU(inplace=True),
-            )
+        # pw
+        nn.Conv2d(inp, oup_inc, 1, 1, 0, bias=False),
+        nn.BatchNorm2d(oup_inc),
+        nn.ReLU(inplace=True),
+        # dw
+        nn.Conv2d(oup_inc, oup_inc, 3, stride,
+                  1, groups=oup_inc, bias=False),
+        nn.BatchNorm2d(oup_inc),
+        # pw-linear
+        nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
+        nn.BatchNorm2d(oup_inc),
+        nn.ReLU(inplace=True),
+    )
     return left_banch, right_banch
+
 
 class EdgeCRNN_Residual(nn.Module):
     def __init__(self, inp, oup, stride, benchmodel):
@@ -129,6 +139,7 @@ class EdgeCRNN_Residual(nn.Module):
 
         return channel_shuffle(out, 2)
 
+
 class EdgeCRNN(nn.Module):
     def __init__(self, n_class=12, input_size=101, width_mult=1.):
         super(EdgeCRNN, self).__init__()
@@ -139,9 +150,11 @@ class EdgeCRNN(nn.Module):
         # index 0 is invalid and should never be called.
         # only used for indexing convenience.
         if width_mult == 0.5:
-            self.stage_out_channels = [-1, 16, 32, 64, 128, 256]  # *2  *2  16,  32,  64, 128, 256
+            # *2  *2  16,  32,  64, 128, 256
+            self.stage_out_channels = [-1, 16, 32, 64, 128, 256]
         elif width_mult == 1.0:
-            self.stage_out_channels = [-1, 24, 72, 144, 288, 512]  # *4.9 *2  24, 72, 144, 288, 512
+            # *4.9 *2  24, 72, 144, 288, 512
+            self.stage_out_channels = [-1, 24, 72, 144, 288, 512]
         elif width_mult == 1.5:
             self.stage_out_channels = [-1, 24, 116, 232, 464, 1024]  # *7.3 *2
         elif width_mult == 2.0:
@@ -162,22 +175,27 @@ class EdgeCRNN(nn.Module):
             for i in range(numrepeat):
                 if i == 0:
                     # inp, oup, stride, benchmodel):
-                    self.features.append(EdgeCRNN_Residual(input_channel, output_channel, 2, 2))
+                    self.features.append(EdgeCRNN_Residual(
+                        input_channel, output_channel, 2, 2))
                 else:
-                    self.features.append(EdgeCRNN_Residual(input_channel, output_channel, 1, 1))
+                    self.features.append(EdgeCRNN_Residual(
+                        input_channel, output_channel, 1, 1))
                 input_channel = output_channel
         # make it nn.Sequential
         self.features = nn.Sequential(*self.features)  # 16层网络
         # building last several layers
-        self.conv_last = conv_1x1_bn(input_channel, self.stage_out_channels[-1])
+        self.conv_last = conv_1x1_bn(
+            input_channel, self.stage_out_channels[-1])
 
-        self.globalpool = nn.Sequential(nn.AvgPool2d((3, 1), stride=(1, 1)))  # rnn->cnn (3,1)->(3, 7)
+        self.globalpool = nn.Sequential(nn.AvgPool2d(
+            (3, 1), stride=(1, 1)))  # rnn->cnn (3,1)->(3, 7)
         # first-layer(3,1),other(2,1)； cnn first（3,7），other（2,4）
 
         # add RNN block
         self.hidden_size = 64
         # self.RNN = nn.RNN(self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
-        self.RNN = nn.LSTM(self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
+        self.RNN = nn.LSTM(
+            self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
         # self.RNN = nn.GRU(self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
         self.classifier = nn.Sequential(nn.Linear(self.hidden_size, n_class))
 
@@ -199,10 +217,103 @@ class EdgeCRNN(nn.Module):
         # x = x.view(-1, self.stage_out_channels[-1])
 
         # add RNN block
-        x = x.squeeze(dim=2).permute(0, 2, 1)  # shape(64,1024,1,4)--> shape(b, w, c)  (64, 7, 1024)
+        # shape(64,1024,1,4)--> shape(b, w, c)  (64, 7, 1024)
+        x = x.squeeze(dim=2).permute(0, 2, 1)
         self.RNN.flatten_parameters()
         x, _ = self.RNN(x)  # shape(64, 7, 1024)
         x = x.permute(0, 2, 1).mean(2)  # shape(1, 64,1024)--> (64,1024, 7)
 
         x = self.classifier(x)
         return x
+
+
+class SerializableModule(nn.Module):
+  def __init__(self):
+    super().__init__()
+
+  def save(self, filename):
+    torch.save(self.state_dict(), filename)
+
+  def load(self, filename):
+    self.load_state_dict(torch.load(
+        filename, map_location=lambda storage, loc: storage))
+
+
+class LSTM(SerializableModule):
+  def __init__(self, n_labels):
+    super().__init__()
+    self.lstm = nn.LSTM(
+        input_size=101,
+        hidden_size=128,
+        num_layers=2,
+        batch_first=True,
+    )
+    self.linear = nn.Linear(128, n_labels, bias=False)
+
+  def forward(self, x):
+    embedding, (h_n, h_c) = self.lstm(x, None)
+    y = self.linear(embedding[:, -1, :])
+    # return y, embedding
+    return y
+
+
+class DS_Convolution(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, bias=False):
+        super(DS_Convolution, self).__init__()
+        self.dw_block = nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=in_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+                groups=in_channels,
+                bias=bias),
+            nn.BatchNorm2d(in_channels),
+            nn.ReLU()
+        )
+        self.pw_block = nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=1,
+                bias=bias),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU()
+        )
+
+    def forward(self, x):
+        y = self.dw_block(x)
+        y = self.pw_block(y)
+        return y
+
+
+class DSCNN(SerializableModule):
+  def __init__(self, n_labels=10):
+    super(DSCNN, self).__init__()
+    self.conv1 = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(25, 5), padding=(12, 2)),
+                               nn.BatchNorm2d(64),
+                               nn.ReLU())
+    self.ds_block1 = DS_Convolution(
+        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+    self.ds_block2 = DS_Convolution(
+        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+    self.ds_block3 = DS_Convolution(
+        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+    self.ds_block4 = DS_Convolution(
+        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+    self.avg_pool = nn.AdaptiveAvgPool2d(1)  # global average pooling
+    self.fc1 = nn.Linear(in_features=64, out_features=n_labels)
+
+  def forward(self, x):
+    x = x.unsqueeze(1)
+    y = self.conv1(x)
+    y = self.ds_block1(y)
+    y = self.ds_block2(y)
+    y = self.ds_block3(y)
+    y = self.ds_block4(y)
+    embedding = self.avg_pool(y)
+    embedding = embedding.squeeze(-1).squeeze(-1)
+    y = self.fc1(embedding)
+    return y

@@ -5,7 +5,7 @@ from dataloader import get_dl
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from model import DNNModel, TCNModel, EdgeCRNN
+from model import DNNModel, TCNModel, EdgeCRNN, DSCNN, LSTM
 from tqdm import tqdm
 from train import train
 from valid import valid
@@ -34,27 +34,33 @@ def run(cls, epochs=5):
     valid_X, valid_y = get_data(valid_df)
     test_X, test_y = get_data(test_df)
 
+    print(f'Saving training data...')
     with open('data/train_X.pkl', 'wb') as f:
       pickle.dump(train_X, f)
     with open('data/train_y.pkl', 'wb') as f:
       pickle.dump(train_y, f)
+    print(f'Saving validation data...')
     with open('data/valid_X.pkl', 'wb') as f:
       pickle.dump(valid_X, f)
     with open('data/valid_y.pkl', 'wb') as f:
       pickle.dump(valid_y, f)
+    print(f'Saving testing data...')
     with open('data/test_X.pkl', 'wb') as f:
       pickle.dump(test_X, f)
     with open('data/test_y.pkl', 'wb') as f:
       pickle.dump(test_y, f)
   else:
+    print(f'Loading training data...')
     with open('data/train_X.pkl', 'rb') as f:
       train_X = pickle.load(f)
     with open('data/train_y.pkl', 'rb') as f:
       train_y = pickle.load(f)
+    print(f'Loading validation data...')
     with open('data/valid_X.pkl', 'rb') as f:
       valid_X = pickle.load(f)
     with open('data/valid_y.pkl', 'rb') as f:
       valid_y = pickle.load(f)
+    print(f'Loading testing data...')
     with open('data/test_X.pkl', 'rb') as f:
       test_X = pickle.load(f)
     with open('data/test_y.pkl', 'rb') as f:
@@ -69,7 +75,7 @@ def run(cls, epochs=5):
   test_dl = get_dl(test_ds, bs=32)
 
   loss_fn = nn.CrossEntropyLoss()
-  model = EdgeCRNN(width_mult=1.).to('cuda')
+  model = DSCNN(n_labels=10).to('cuda')
   optimizer = optim.AdamW(model.parameters())
   scheduler = optim.lr_scheduler.CyclicLR(optimizer,
                                             base_lr=1e-5,
