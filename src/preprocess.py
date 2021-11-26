@@ -9,6 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
+
 class Compose():
   def __init__(self, tfms):
     self.tfms = tfms
@@ -18,6 +19,7 @@ class Compose():
         inp = fn(inp)
     return inp
 
+
 class Audio():
   @staticmethod
   def load_audio(pth):
@@ -25,19 +27,24 @@ class Audio():
     if data.size < 16000:
       data = np.pad(data, (16000-data.size, 0), mode='constant')
     return {
-      'data': np.array(data),
-      'sr': sr
+        'data': np.array(data),
+        'sr': sr
     }
+
+  @staticmethod
+  def mfcc(inp):
+    feats = librosa.feature.mfcc(inp['data'], sr=16000, n_mfcc=39)
+    return np.array(feats)
 
   @staticmethod
   def lfbe_delta(inp):
     mel_spec = librosa.feature.melspectrogram(inp['data'],
-            sr=16000,
-            n_mels=13,
-            hop_length=160,
-            n_fft=480,
-            fmin=20,
-            fmax=4000)
+                                              sr=16000,
+                                              n_mels=13,
+                                              hop_length=160,
+                                              n_fft=480,
+                                              fmin=20,
+                                              fmax=4000)
 
     log_mel = librosa.core.power_to_db(mel_spec)
 
@@ -49,6 +56,7 @@ class Audio():
   @staticmethod
   def to_tensor(inp):
     return torch.tensor(inp)
+
 
 def to_csv(clss, dset_pth=Path('data/speech_commands_v0.02')):
   data_dict = dict()
@@ -69,12 +77,14 @@ def to_csv(clss, dset_pth=Path('data/speech_commands_v0.02')):
 
   return pd.DataFrame(data_dict)
 
+
 def cross_validation(df):
-  train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['class'], shuffle=True)
+  train_df, valid_df = train_test_split(
+      df, test_size=0.2, stratify=df['class'], shuffle=True)
   valid_df, test_df = train_test_split(valid_df,
-          test_size=0.5,
-          stratify=valid_df['class'],
-          shuffle=True)
+                                       test_size=0.5,
+                                       stratify=valid_df['class'],
+                                       shuffle=True)
 
   train_df = train_df.reset_index(drop=True)
   valid_df = valid_df.reset_index(drop=True)
@@ -82,11 +92,11 @@ def cross_validation(df):
 
   return train_df, valid_df, test_df
 
-def get_data(df, base_pth=Path('data/speech_commands_v0.02')):
+
+def get_data(df, tfms, base_pth=Path('data/speech_commands_v0.02')):
   print('Getting data: ')
   X = list()
   y = list()
-  tfms = Compose([Audio.load_audio, Audio.lfbe_delta, Audio.to_tensor])
 
   for i in (itr := tqdm(df.iterrows())):
     filename = i[1]['filename']
@@ -101,8 +111,8 @@ def get_data(df, base_pth=Path('data/speech_commands_v0.02')):
 
   return X, y
 
+
 if __name__ == '__main__':
   audio_path = Path('./data/speech_commands_v0.02/go/0132a06d_nohash_4.wav')
   tfms = Compose([Audio.load_audio, Audio.lfbe_delta, Audio.to_tensor])
   print(tfms(audio_path).shape)
-

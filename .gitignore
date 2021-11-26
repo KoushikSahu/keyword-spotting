@@ -1,5 +1,5 @@
 # model files
-model/
+models/
 
 # cache files
 .ipynb_checkpoints/
