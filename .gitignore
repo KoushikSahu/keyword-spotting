@@ -8,3 +8,5 @@ models/
 data/
 __pycache__/
 
+# python virtual env
+env/
