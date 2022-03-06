@@ -58,7 +58,7 @@ class Audio():
     return torch.tensor(inp)
 
 
-def to_csv(clss, dset_pth=Path('data/speech_commands_v0.02')):
+def to_csv(clss, dset_pth=Path('data')):
   data_dict = dict()
   data_dict['filename'] = list()
   data_dict['classname'] = list()
@@ -93,7 +93,7 @@ def cross_validation(df):
   return train_df, valid_df, test_df
 
 
-def get_data(df, tfms, base_pth=Path('data/speech_commands_v0.02')):
+def get_data(df, tfms, base_pth=Path('data')):
   print('Getting data: ')
   X = list()
   y = list()

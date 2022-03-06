@@ -7,6 +7,8 @@ models/
 # data files
 data/
 __pycache__/
+*.tflite
+*.wav
 
 # python virtual env
 env/

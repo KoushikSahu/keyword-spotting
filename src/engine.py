@@ -11,6 +11,43 @@ from train import train
 from valid import valid
 import os
 import pickle
+import onnx
+from onnx_tf.backend import prepare
+import tensorflow as tf
+
+def torch_to_tflite(model, filename, quantized=False):
+    # pytorch model to onnx
+    ONNX_PATH = f'models/{filename}.onnx'
+    dummy_input = torch.randn(16, 39, 101).to('cuda')
+    torch.onnx.export(
+        model = model,
+        args = dummy_input,
+        f = ONNX_PATH,
+        verbose = False,
+        opset_version = 12, 
+        input_names=['input'],
+        output_names=['output']
+    )
+
+    # loading the saved onnx model
+    onnx_model = onnx.load(ONNX_PATH)
+
+    # convert with onnx-tf
+    tf_rep = prepare(onnx_model)
+
+    # exporting tf model
+    TF_PATH = f'models/{filename}_tf'
+    tf_rep.export_graph(TF_PATH)
+
+    # tf to tflite
+    TFLITE_PATH = f'models/{filename}.tflite'
+    converter = tf.lite.TFLiteConverter.from_saved_model(TF_PATH)
+    converter.experimental_enable_resource_variables = True
+    # converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model(TF_PATH)
+    converter.optimizations = [tf.compat.v1.lite.Optimize.DEFAULT]
+    tf_lite_model = converter.convert()
+    with open(TFLITE_PATH, 'wb') as f:
+        f.write(tf_lite_model)
 
 def run(cls, tfms, model_name='edgecrnn', epochs=5):
   if tfms.tfms[1] == Audio.mfcc:
@@ -81,16 +118,16 @@ def run(cls, tfms, model_name='edgecrnn', epochs=5):
 
   loss_fn = nn.CrossEntropyLoss()
   if model_name == 'dnn':
-      model = DNNModel(n_classes=10)
+      model = DNNModel(n_classes=len(cls))
   elif model_name == 'lstm':
-      model = LSTM(n_labels=10)
+      model = LSTM(n_labels=len(cls))
   elif model_name == 'dscnn':
-      model = DSCNN(n_labels=10)
+      model = DSCNN(n_labels=len(cls))
   elif model_name == 'tcn':
-      model = TCNModel(n_classes=10, n_filters=32)
+      model = TCNModel(n_classes=len(cls), n_filters=32)
   elif model_name == 'edgecrnn':
-      model = EdgeCRNN(n_class=10)
-  model = DSCNN(n_labels=10).to('cuda')
+      model = EdgeCRNN(n_class=len(cls))
+  model = model.to('cuda')
   optimizer = optim.AdamW(model.parameters())
   scheduler = optim.lr_scheduler.CyclicLR(optimizer,
                                             base_lr=1e-5,
@@ -107,7 +144,9 @@ def run(cls, tfms, model_name='edgecrnn', epochs=5):
     if valid_acc > max_acc:
         print(f'Saving model...')
         max_acc = valid_acc
-        torch.save(model.state_dict(), f'models/{model_name+str(int(max_acc*100))}')
+        torch.save(model.state_dict(), f'models/{model_name+str(int(max_acc*100))}.pt')
+        torch_to_tflite(model, model_name+str(int(max_acc*100)))
 
   test_acc = valid(test_dl, model, loss_fn, optimizer)
   print(f'Test Accuracy: {test_acc}')
+
