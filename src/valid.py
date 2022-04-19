@@ -1,26 +1,27 @@
 from tqdm import tqdm
 import torch
 
+
 def valid(dl, model, loss_fn, optimizer):
-  correct = 0
-  total = 0
-  
-  with torch.no_grad():
-    for data in (itr := tqdm(dl)):
-      # for dnn and tcn:
-      # audio = data['audio'].to('cuda').view(-1, 1, 39, 101)
-      # for edgecrnn:
-      audio = data['audio'].to('cuda')
-      targ = data['class'].to('cuda')
+    correct = 0
+    total = 0
 
-      output = model(audio)
-      loss = loss_fn(output, targ)
-      itr.set_description(f'Validation Loss: {loss}')
+    with torch.no_grad():
+        for data in (itr := tqdm(dl)):
+            # for dnn and tcn:
+            # audio = data['audio'].to('cuda').view(-1, 1, 39, 101)
+            # for edgecrnn:
+            audio = data['audio'].to('cuda')
+            targ = data['class'].to('cuda')
 
-      preds = torch.argmax(output, dim=1)
-      correct += (preds==targ).sum()
-      total += targ.shape[0]
+            output = model(audio)
+            loss = loss_fn(output, targ)
+            itr.set_description(f'Validation Loss: {loss}')
 
-  accuracy = correct / total
+            preds = torch.argmax(output, dim=1)
+            correct += (preds == targ).sum()
+            total += targ.shape[0]
 
-  return accuracy
+    accuracy = correct / total
+
+    return accuracy
