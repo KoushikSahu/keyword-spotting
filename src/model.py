@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from preprocess import Audio
-from pathlib import Path
 from tsai.all import TCN
+import onnx
+from onnx_tf.backend import prepare
+import tensorflow as tf
 
 
 class TCNModel(nn.Module):
@@ -317,3 +318,39 @@ class DSCNN(SerializableModule):
     embedding = embedding.squeeze(-1).squeeze(-1)
     y = self.fc1(embedding)
     return y
+
+
+def torch_to_tflite(model, filename, quantized=False):
+    # pytorch model to onnx
+    ONNX_PATH = f'models/{filename}.onnx'
+    dummy_input = torch.randn(16, 39, 101).to('cuda')
+    torch.onnx.export(
+        model = model,
+        args = dummy_input,
+        f = ONNX_PATH,
+        verbose = False,
+        opset_version = 12, 
+        input_names=['input'],
+        output_names=['output']
+    )
+
+    # loading the saved onnx model
+    onnx_model = onnx.load(ONNX_PATH)
+
+    # convert with onnx-tf
+    tf_rep = prepare(onnx_model)
+
+    # exporting tf model
+    TF_PATH = f'models/{filename}_tf'
+    tf_rep.export_graph(TF_PATH)
+
+    # tf to tflite
+    TFLITE_PATH = f'models/{filename}.tflite'
+    converter = tf.lite.TFLiteConverter.from_saved_model(TF_PATH)
+    converter.experimental_enable_resource_variables = True
+    # converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model(TF_PATH)
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    tf_lite_model = converter.convert()
+    with open(TFLITE_PATH, 'wb') as f:
+        f.write(tf_lite_model)
+
