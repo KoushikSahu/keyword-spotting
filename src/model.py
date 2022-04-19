@@ -8,23 +8,23 @@ import tensorflow as tf
 
 
 class TCNModel(nn.Module):
-  def __init__(self, n_classes, n_filters):
-    super(TCNModel, self).__init__()
-    self.tcn = TCN(c_in=39, c_out=n_classes, layers=[25]*n_filters)
+    def __init__(self, n_classes, n_filters):
+        super(TCNModel, self).__init__()
+    self.tcn = TCN(c_in=39, c_out=n_classes, layers=[25] * n_filters)
 
-  def forward(self, inp):
-    return self.tcn(inp)
+    def forward(self, inp):
+        return self.tcn(inp)
 
 
 class DNNModel(nn.Module):
-  def __init__(self, n_classes):
-    super(DNNModel, self).__init__()
+    def __init__(self, n_classes):
+        super(DNNModel, self).__init__()
     self.n_classes = n_classes
-    self.lin1 = nn.Linear(in_features=39*101, out_features=512)
+    self.lin1 = nn.Linear(in_features=39 * 101, out_features=512)
     self.lin2 = nn.Linear(in_features=512, out_features=n_classes)
 
   def forward(self, inp):
-    inp = torch.flatten(inp, start_dim=1)
+      inp = torch.flatten(inp, start_dim=1)
     inp = F.relu(self.lin1(inp))
     out = self.lin2(inp)
 
@@ -33,19 +33,19 @@ class DNNModel(nn.Module):
 
 def first_conv(inp, oup):
     return nn.Sequential(
-        nn.Conv2d(inp, oup, 3, 1, 1, bias=False),
-        nn.BatchNorm2d(oup),
-        nn.ReLU(inplace=True)
-    )
+            nn.Conv2d(inp, oup, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(oup),
+            nn.ReLU(inplace=True)
+            )
 
 
 def conv_1x1_bn(inp, oup):
     return nn.Sequential(
-        nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup),
-        # nn.PReLU()
-        nn.ReLU(inplace=True)
-    )
+            nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup),
+            # nn.PReLU()
+            nn.ReLU(inplace=True)
+            )
 
 
 def channel_shuffle(x, groups):
@@ -68,45 +68,45 @@ def channel_shuffle(x, groups):
 def Base_block(oup_inc, stride):
 
     banch = nn.Sequential(
-        # pw
-        nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        nn.ReLU(inplace=True),
-        # dw
-        nn.Conv2d(oup_inc, oup_inc, 3, stride, 1, groups=oup_inc, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        # pw-linear
-        nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        nn.ReLU(inplace=True),
-    )
+            # pw
+            nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            nn.ReLU(inplace=True),
+            # dw
+            nn.Conv2d(oup_inc, oup_inc, 3, stride, 1, groups=oup_inc, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            # pw-linear
+            nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            nn.ReLU(inplace=True),
+            )
     return banch
 
 
 def EdgeCRNN_block(inp, oup_inc, stride):
     left_banch = nn.Sequential(
-        # dw
-        nn.Conv2d(inp, inp, 3, stride, 1, groups=inp, bias=False),
-        nn.BatchNorm2d(inp),
-        # pw-linear
-        nn.Conv2d(inp, oup_inc, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        nn.ReLU(inplace=True),
-    )
+            # dw
+            nn.Conv2d(inp, inp, 3, stride, 1, groups=inp, bias=False),
+            nn.BatchNorm2d(inp),
+            # pw-linear
+            nn.Conv2d(inp, oup_inc, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            nn.ReLU(inplace=True),
+            )
     right_banch = nn.Sequential(
-        # pw
-        nn.Conv2d(inp, oup_inc, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        nn.ReLU(inplace=True),
-        # dw
-        nn.Conv2d(oup_inc, oup_inc, 3, stride,
-                  1, groups=oup_inc, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        # pw-linear
-        nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup_inc),
-        nn.ReLU(inplace=True),
-    )
+            # pw
+            nn.Conv2d(inp, oup_inc, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            nn.ReLU(inplace=True),
+            # dw
+            nn.Conv2d(oup_inc, oup_inc, 3, stride,
+                1, groups=oup_inc, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            # pw-linear
+            nn.Conv2d(oup_inc, oup_inc, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(oup_inc),
+            nn.ReLU(inplace=True),
+            )
     return left_banch, right_banch
 
 
@@ -162,8 +162,8 @@ class EdgeCRNN(nn.Module):
             self.stage_out_channels = [-1, 24, 160, 320, 640, 1024]  # *9.3  *2
         else:
             raise ValueError(
-                """groups is not supported for
-                       1x1 Grouped Convolutions""")
+                    """groups is not supported for
+                    1x1 Grouped Convolutions""")
         # building first layer
         input_channel = self.stage_out_channels[1]
         self.conv1 = first_conv(1, input_channel)  # 1 dim
@@ -186,7 +186,7 @@ class EdgeCRNN(nn.Module):
         self.features = nn.Sequential(*self.features)  # 16层网络
         # building last several layers
         self.conv_last = conv_1x1_bn(
-            input_channel, self.stage_out_channels[-1])
+                input_channel, self.stage_out_channels[-1])
 
         self.globalpool = nn.Sequential(nn.AvgPool2d(
             (3, 1), stride=(1, 1)))  # rnn->cnn (3,1)->(3, 7)
@@ -196,7 +196,7 @@ class EdgeCRNN(nn.Module):
         self.hidden_size = 64
         # self.RNN = nn.RNN(self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
         self.RNN = nn.LSTM(
-            self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
+                self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
         # self.RNN = nn.GRU(self.stage_out_channels[-1], self.hidden_size, num_layers=1, batch_first=True)
         self.classifier = nn.Sequential(nn.Linear(self.hidden_size, n_class))
 
@@ -229,30 +229,30 @@ class EdgeCRNN(nn.Module):
 
 
 class SerializableModule(nn.Module):
-  def __init__(self):
-    super().__init__()
+    def __init__(self):
+        super().__init__()
 
   def save(self, filename):
-    torch.save(self.state_dict(), filename)
+      torch.save(self.state_dict(), filename)
 
   def load(self, filename):
-    self.load_state_dict(torch.load(
-        filename, map_location=lambda storage, loc: storage))
+      self.load_state_dict(torch.load(
+          filename, map_location=lambda storage, loc: storage))
 
 
 class LSTM(SerializableModule):
-  def __init__(self, n_labels):
-    super().__init__()
+    def __init__(self, n_labels):
+        super().__init__()
     self.lstm = nn.LSTM(
-        input_size=101,
-        hidden_size=128,
-        num_layers=2,
-        batch_first=True,
-    )
+            input_size=101,
+            hidden_size=128,
+            num_layers=2,
+            batch_first=True,
+            )
     self.linear = nn.Linear(128, n_labels, bias=False)
 
   def forward(self, x):
-    embedding, (h_n, h_c) = self.lstm(x, None)
+      embedding, (h_n, h_c) = self.lstm(x, None)
     y = self.linear(embedding[:, -1, :])
     # return y, embedding
     return y
@@ -262,27 +262,27 @@ class DS_Convolution(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, bias=False):
         super(DS_Convolution, self).__init__()
         self.dw_block = nn.Sequential(
-            torch.nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=in_channels,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-                dilation=dilation,
-                groups=in_channels,
-                bias=bias),
-            nn.BatchNorm2d(in_channels),
-            nn.ReLU()
-        )
+                torch.nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=in_channels,
+                    kernel_size=kernel_size,
+                    stride=stride,
+                    padding=padding,
+                    dilation=dilation,
+                    groups=in_channels,
+                    bias=bias),
+                nn.BatchNorm2d(in_channels),
+                nn.ReLU()
+                )
         self.pw_block = nn.Sequential(
-            torch.nn.Conv2d(
-                in_channels=in_channels,
-                out_channels=out_channels,
-                kernel_size=1,
-                bias=bias),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU()
-        )
+                torch.nn.Conv2d(
+                    in_channels=in_channels,
+                    out_channels=out_channels,
+                    kernel_size=1,
+                    bias=bias),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU()
+                )
 
     def forward(self, x):
         y = self.dw_block(x)
@@ -291,24 +291,24 @@ class DS_Convolution(nn.Module):
 
 
 class DSCNN(SerializableModule):
-  def __init__(self, n_labels=10):
-    super(DSCNN, self).__init__()
+    def __init__(self, n_labels=10):
+        super(DSCNN, self).__init__()
     self.conv1 = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(25, 5), padding=(12, 2)),
-                               nn.BatchNorm2d(64),
-                               nn.ReLU())
+            nn.BatchNorm2d(64),
+            nn.ReLU())
     self.ds_block1 = DS_Convolution(
-        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
     self.ds_block2 = DS_Convolution(
-        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
     self.ds_block3 = DS_Convolution(
-        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
     self.ds_block4 = DS_Convolution(
-        in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
     self.avg_pool = nn.AdaptiveAvgPool2d(1)  # global average pooling
     self.fc1 = nn.Linear(in_features=64, out_features=n_labels)
 
   def forward(self, x):
-    x = x.unsqueeze(1)
+      x = x.unsqueeze(1)
     y = self.conv1(x)
     y = self.ds_block1(y)
     y = self.ds_block2(y)
@@ -325,14 +325,14 @@ def torch_to_tflite(model, filename, quantized=False):
     ONNX_PATH = f'models/{filename}.onnx'
     dummy_input = torch.randn(16, 39, 101).to('cuda')
     torch.onnx.export(
-        model = model,
-        args = dummy_input,
-        f = ONNX_PATH,
-        verbose = False,
-        opset_version = 12, 
-        input_names=['input'],
-        output_names=['output']
-    )
+            model = model,
+            args = dummy_input,
+            f = ONNX_PATH,
+            verbose = False,
+            opset_version = 12, 
+            input_names=['input'],
+            output_names=['output']
+            )
 
     # loading the saved onnx model
     onnx_model = onnx.load(ONNX_PATH)
