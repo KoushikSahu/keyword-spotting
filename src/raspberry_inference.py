@@ -78,6 +78,7 @@ def record_audio():
     myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
     sd.wait()
     write('./data/recorded_audio.wav', fs, myrecording)
+    print(f'Stopped listening')
 
 def main():
     pth = args.wavfile
