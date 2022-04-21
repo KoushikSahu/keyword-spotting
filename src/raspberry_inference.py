@@ -3,6 +3,8 @@ import numpy as np
 import librosa
 from tflite_runtime.interpreter import Interpreter
 import argparse
+import sounddevice as sd
+from scipy.io.wavfile import write
 
 parser = argparse.ArgumentParser(description='rpi_inference')
 parser.add_argument('--audio', action="store", dest="wavfile", required=True)
@@ -12,9 +14,9 @@ parser.add_argument(
     dest="tflitemodel",
     required=False)
 
-argss = parser.parse_args()
-wavfile = argss.wavfile
-tflitemodel = argss.tflitemodel
+args = parser.parse_args()
+wavfile = args.wavfile
+tflitemodel = args.tflitemodel
 
 
 def load_audio(pth):
@@ -62,13 +64,26 @@ def inference(model_path, processed_audio, word_dict):
     word_scores = output_data[0]
     print(word_scores)
     word_index = np.argmax(word_scores, axis=0)
-    if word_scores[word_index] > 2:
-        return word_dict[word_index]
-    return "unknown"
+    # if word_scores[word_index] > 2:
+        # return word_dict[word_index]
+    # return "unknown"
+    return word_dict[word_index]
 
+
+def record_audio():
+    fs = 16000
+    seconds = 1
+
+    print(f'Listening...')
+    myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=2)
+    sd.wait()
+    write('./data/recorded_audio.wav', fs, myrecording)
 
 def main():
-    pth = argss.wavfile
+    pth = args.wavfile
+    if pth == 'record':
+        record_audio()
+        pth = './data/recorded_audio.wav'
     data, _ = load_audio(pth)
     processed_audio = lfbe_delta(data)
     classes_map = {
@@ -83,7 +98,7 @@ def main():
         'six': 8,
         'yes': 9}
     word_dict = {v: k for k, v in classes_map.items()}
-    print(inference(argss.tflitemodel, processed_audio, word_dict))
+    print(inference(args.tflitemodel, processed_audio, word_dict))
 
 
 if __name__ == '__main__':
