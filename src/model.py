@@ -10,7 +10,7 @@ import tensorflow as tf
 class TCNModel(nn.Module):
     def __init__(self, n_classes, n_filters):
         super(TCNModel, self).__init__()
-    self.tcn = TCN(c_in=39, c_out=n_classes, layers=[25] * n_filters)
+        self.tcn = TCN(c_in=39, c_out=n_classes, layers=[25] * n_filters)
 
     def forward(self, inp):
         return self.tcn(inp)
@@ -19,16 +19,16 @@ class TCNModel(nn.Module):
 class DNNModel(nn.Module):
     def __init__(self, n_classes):
         super(DNNModel, self).__init__()
-    self.n_classes = n_classes
-    self.lin1 = nn.Linear(in_features=39 * 101, out_features=512)
-    self.lin2 = nn.Linear(in_features=512, out_features=n_classes)
+        self.n_classes = n_classes
+        self.lin1 = nn.Linear(in_features=39 * 101, out_features=512)
+        self.lin2 = nn.Linear(in_features=512, out_features=n_classes)
 
-  def forward(self, inp):
-      inp = torch.flatten(inp, start_dim=1)
-    inp = F.relu(self.lin1(inp))
-    out = self.lin2(inp)
+    def forward(self, inp):
+        inp = torch.flatten(inp, start_dim=1)
+        inp = F.relu(self.lin1(inp))
+        out = self.lin2(inp)
 
-    return out
+        return out
 
 
 def first_conv(inp, oup):
@@ -232,30 +232,30 @@ class SerializableModule(nn.Module):
     def __init__(self):
         super().__init__()
 
-  def save(self, filename):
-      torch.save(self.state_dict(), filename)
+    def save(self, filename):
+        torch.save(self.state_dict(), filename)
 
-  def load(self, filename):
-      self.load_state_dict(torch.load(
-          filename, map_location=lambda storage, loc: storage))
+    def load(self, filename):
+        self.load_state_dict(torch.load(
+            filename, map_location=lambda storage, loc: storage))
 
 
 class LSTM(SerializableModule):
     def __init__(self, n_labels):
         super().__init__()
-    self.lstm = nn.LSTM(
-            input_size=101,
-            hidden_size=128,
-            num_layers=2,
-            batch_first=True,
-            )
-    self.linear = nn.Linear(128, n_labels, bias=False)
+        self.lstm = nn.LSTM(
+                input_size=101,
+                hidden_size=128,
+                num_layers=2,
+                batch_first=True,
+                )
+        self.linear = nn.Linear(128, n_labels, bias=False)
 
-  def forward(self, x):
-      embedding, (h_n, h_c) = self.lstm(x, None)
-    y = self.linear(embedding[:, -1, :])
-    # return y, embedding
-    return y
+    def forward(self, x):
+        embedding, (h_n, h_c) = self.lstm(x, None)
+        y = self.linear(embedding[:, -1, :])
+        # return y, embedding
+        return y
 
 
 class DS_Convolution(nn.Module):
@@ -293,31 +293,32 @@ class DS_Convolution(nn.Module):
 class DSCNN(SerializableModule):
     def __init__(self, n_labels=10):
         super(DSCNN, self).__init__()
-    self.conv1 = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(25, 5), padding=(12, 2)),
-            nn.BatchNorm2d(64),
-            nn.ReLU())
-    self.ds_block1 = DS_Convolution(
-            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
-    self.ds_block2 = DS_Convolution(
-            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
-    self.ds_block3 = DS_Convolution(
-            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
-    self.ds_block4 = DS_Convolution(
-            in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
-    self.avg_pool = nn.AdaptiveAvgPool2d(1)  # global average pooling
-    self.fc1 = nn.Linear(in_features=64, out_features=n_labels)
 
-  def forward(self, x):
-      x = x.unsqueeze(1)
-    y = self.conv1(x)
-    y = self.ds_block1(y)
-    y = self.ds_block2(y)
-    y = self.ds_block3(y)
-    y = self.ds_block4(y)
-    embedding = self.avg_pool(y)
-    embedding = embedding.squeeze(-1).squeeze(-1)
-    y = self.fc1(embedding)
-    return y
+        self.conv1 = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(25, 5), padding=(12, 2)),
+                nn.BatchNorm2d(64),
+                nn.ReLU())
+        self.ds_block1 = DS_Convolution(
+                in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+        self.ds_block2 = DS_Convolution(
+                in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+        self.ds_block3 = DS_Convolution(
+                in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+        self.ds_block4 = DS_Convolution(
+                in_channels=64, out_channels=64, kernel_size=(25, 5), padding=(12, 2))
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)  # global average pooling
+        self.fc1 = nn.Linear(in_features=64, out_features=n_labels)
+
+    def forward(self, x):
+        x = x.unsqueeze(1)
+        y = self.conv1(x)
+        y = self.ds_block1(y)
+        y = self.ds_block2(y)
+        y = self.ds_block3(y)
+        y = self.ds_block4(y)
+        embedding = self.avg_pool(y)
+        embedding = embedding.squeeze(-1).squeeze(-1)
+        y = self.fc1(embedding)
+        return y
 
 
 def torch_to_tflite(model, filename, quantized=False):
