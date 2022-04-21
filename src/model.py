@@ -293,6 +293,7 @@ class DS_Convolution(nn.Module):
 class DSCNN(SerializableModule):
     def __init__(self, n_labels=10):
         super(DSCNN, self).__init__()
+
         self.conv1 = nn.Sequential(nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(25, 5), padding=(12, 2)),
                 nn.BatchNorm2d(64),
                 nn.ReLU())
