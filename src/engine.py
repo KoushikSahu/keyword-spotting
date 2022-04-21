@@ -101,6 +101,7 @@ def run(cls, tfms, model_name='edgecrnn', epochs=5):
     max_acc = 0
     for epoch in range(epochs):
         print(f'\nEpoch #{epoch}:')
+        model = model.train()
         train(train_dl, model, loss_fn, optimizer, scheduler)
         valid_acc = valid(valid_dl, model, loss_fn, optimizer)
         print(f'Validation Accuracy: {valid_acc}')
@@ -108,6 +109,7 @@ def run(cls, tfms, model_name='edgecrnn', epochs=5):
         if valid_acc > max_acc:
             print(f'Saving model...')
             max_acc = valid_acc
+            model = model.eval()
             torch.save(
                 model.state_dict(),
                 f'models/{model_name+str(int(max_acc*100))}.pt')
