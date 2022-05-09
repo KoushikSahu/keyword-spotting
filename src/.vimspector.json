@@ -1,0 +1,27 @@
+{
+    "configurations": {
+        "Launch": {
+            "adapter": "debugpy",
+            "filetypes": [
+                "python"
+            ],
+            "configuration": {
+                "name": "Launch",
+                "type": "python",
+                "request": "launch",
+                "cwd": "/home/koushik/projects/keyword-spotting",
+                "python": "/home/koushik/miniconda3/envs/ml/bin/python",
+                "stopOnEntry": true,
+                "console": "externalTerminal",
+                "debugOptions": [],
+                "program": "src/raspberry_inference.py",
+                "args": [
+                    "--model",
+                    "models/dscnn88.tflite",
+                    "--audio",
+                    "record"
+                ]
+            }
+        }
+    }
+}

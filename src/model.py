@@ -324,7 +324,7 @@ class DSCNN(SerializableModule):
 def torch_to_tflite(model, filename, quantized=False):
     # pytorch model to onnx
     ONNX_PATH = f'models/{filename}.onnx'
-    dummy_input = torch.randn(16, 39, 101).to('cuda')
+    dummy_input = torch.randn(1, 39, 101).to('cuda')
     torch.onnx.export(
             model = model,
             args = dummy_input,
