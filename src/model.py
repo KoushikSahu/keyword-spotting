@@ -349,6 +349,8 @@ def torch_to_tflite(model, filename, quantized=False):
     TFLITE_PATH = f'models/{filename}.tflite'
     converter = tf.lite.TFLiteConverter.from_saved_model(TF_PATH)
     converter.experimental_enable_resource_variables = True
+    if quantized:
+        converter.target_spec.supported_types = [tf.float16]
     # converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model(TF_PATH)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     tf_lite_model = converter.convert()
