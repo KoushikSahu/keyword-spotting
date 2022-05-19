@@ -11,6 +11,7 @@ from train import train
 from valid import valid
 import os
 import pickle
+from torch.utils.tensorboard import SummaryWriter
 
 
 def run(cls, tfms, model_name='edgecrnn', epochs=5):
@@ -99,11 +100,16 @@ def run(cls, tfms, model_name='edgecrnn', epochs=5):
                                             cycle_momentum=False)
 
     max_acc = 0
+    writer = SummaryWriter()
+    dummy_data = torch.randn((16, 39, 101)).to('cuda')
+    writer.add_graph(model, dummy_data)
+
     for epoch in range(epochs):
         print(f'\nEpoch #{epoch}:')
         model = model.train()
-        train(train_dl, model, loss_fn, optimizer, scheduler)
+        train(train_dl, model, loss_fn, optimizer, scheduler, writer, epoch, len(train_dl))
         valid_acc = valid(valid_dl, model, loss_fn, optimizer)
+        writer.add_scalar('Metrics/validation_accuracy', valid_acc, epoch)
         print(f'Validation Accuracy: {valid_acc}')
 
         if valid_acc > max_acc:
@@ -115,5 +121,8 @@ def run(cls, tfms, model_name='edgecrnn', epochs=5):
                 f'models/{model_name+str(int(max_acc*100))}.pt')
             torch_to_tflite(model, model_name + str(int(max_acc * 100)))
 
+    writer.close()
+
     test_acc = valid(test_dl, model, loss_fn, optimizer)
     print(f'Test Accuracy: {test_acc}')
+
