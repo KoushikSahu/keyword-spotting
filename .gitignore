@@ -18,3 +18,7 @@ onnx-tensorflow/
 
 # editor/IDE log files
 .vscode/
+
+# tensorboard files
+runs/
+

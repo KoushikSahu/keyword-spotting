@@ -1,12 +1,6 @@
 from engine import run
-from preprocess import Audio, Compose
+from runtime_config import cls, tfms
 
 if __name__ == '__main__':
     # cls = ['yes', 'no']
-    cls = [
-        'on',
-        'off',
-        'zero',
-        'one']
-    tfms = Compose([Audio.load_audio, Audio.lfbe_delta, Audio.to_tensor])
-    run(cls=cls, tfms=tfms, model_name='dscnn', epochs=5)
+    run(cls=cls, tfms=tfms, model_name='dscnn', epochs=1)
