@@ -1,0 +1,15 @@
+librosa==0.9.1
+matplotlib==3.5.2
+numpy==1.22.3
+onnx==1.11.0
+onnx_tf==1.10.0
+pandas==1.4.2
+pydub==0.25.1
+scikit_learn==1.1.1
+scipy==1.8.1
+sounddevice==0.4.4
+tensorflow==2.9.1
+tflite_runtime==2.8.0
+torch==1.11.0
+tqdm==4.64.0
+tsai==0.3.1
